@@ -1,35 +1,34 @@
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, url_for, redirect, request
+import requests
 
-app = Flask(__name__) 
-
+app = Flask(__name__)
 app.config["DEBUG"] = True
 
 @app.route("/")
-def render_landing_page():
-     return render_template("landing-page.html")
+def show_landing_page():
+    return render_template("landing-page.html")
 
-'''
-@app.route("/")
-def render_landing_page():
-     return render_template("landing-page.html", user_account = "Heicoders", account_type = "Premium")
-'''
+@app.route("/search", methods=['POST'])
+def form_submit():
+    user_query = request.form['search_query'] # matches name attribute of query string input (HTML)
+    redirect_url = url_for('.search_imdb', query_string=user_query)  # match search_imdb function name (Python flask)
+    return redirect(redirect_url)
 
 
-import requests
-
-url = "https://imdb8.p.rapidapi.com/title/auto-complete"
-
-querystring = {"q":"game of thr"}
-
-headers = {
-    'x-rapidapi-key': "8f4e5e28c8msh1f72ed78b1fd81ap14b114jsncd604d9d801f",
-    'x-rapidapi-host': "imdb8.p.rapidapi.com"
+@app.route("/search/<query_string>", methods=['GET'])
+def search_imdb(query_string):
+    url = "https://imdb8.p.rapidapi.com/title/auto-complete"
+    querystring = {"q": query_string}
+    headers = {
+          'x-rapidapi-key': "8f4e5e28c8msh1f72ed78b1fd81ap14b114jsncd604d9d801f",
+          'x-rapidapi-host': "imdb8.p.rapidapi.com"
     }
-
-response = requests.request("GET", url, headers=headers, params=querystring)
-
-print(response.text)
+    try:
+        response = requests.request("GET", url, headers=headers, params=querystring)
+        data = response.json()
+        return render_template("search-result.html", data=data)
+    except:
+        return render_template("error404.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port="5000")
